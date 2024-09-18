@@ -26,8 +26,8 @@
 // This code is mostly from R sources
 SEXP myDoSystem(SEXP call, SEXP op, SEXP args, SEXP) {
   int argsCount = Rf_length(args);
-  if (argsCount < 5 || argsCount > 6) {
-    Rf_error("%d arguments passed to .Internal(system) which requires 2 or 3", argsCount);
+  if (argsCount < 5 || argsCount > 7) {
+    Rf_error("%d arguments passed to .Internal(system) which requires 2 to 4", argsCount);
   }
 
   SEXP cmdExp = CAR(args);
@@ -58,6 +58,8 @@ SEXP myDoSystem(SEXP call, SEXP op, SEXP args, SEXP) {
     Rf_errorcall(call, "invalid '%s' argument", "timeout");
   if (timeout && !flag)
     Rf_errorcall(call, "Timeout with background running processes is not supported.");
+  args = CDR(args);
+  bool con_signals = args != R_NilValue && Rf_asLogical(CAR(args));
 
   if (flag == 2) flag = 1; /* ignore std.output.on.console */
   const char* fout = "";
@@ -79,7 +81,7 @@ SEXP myDoSystem(SEXP call, SEXP op, SEXP args, SEXP) {
 
   CPP_BEGIN
     std::string command = cmd;
-    DoSystemResult res = myDoSystemImpl(command.c_str(), timeout, outType, fout, errType, ferr, fin, flag == 0);
+    DoSystemResult res = myDoSystemImpl(command.c_str(), timeout, outType, fout, errType, ferr, fin, flag == 0, con_signals);
     if (res.timedOut) Rf_warning("command '%s' timed out after %ds", cmd, timeout);
     if (outType == COLLECT || errType == COLLECT) {
       std::vector<std::string> lines;

@@ -33,7 +33,7 @@ void SET_PRIMFUN(SEXP x, CCODE f);
 DoSystemResult myDoSystemImpl(const char* cmd, int timeout,
                               SystemOutputType outType, const char* outFile,
                               SystemOutputType errType, const char* errFile,
-                              const char* inFile, bool background) {
+                              const char* inFile, bool background, bool con_signals) {
   if (background) {
     if (outType == COLLECT) outType = IGNORE_OUTPUT;
     if (errType == COLLECT) errType = IGNORE_OUTPUT;
@@ -85,9 +85,9 @@ DoSystemResult myDoSystemImpl(const char* cmd, int timeout,
           break;
         }
       },
-      !background || !replInput
+      !background || !replInput || con_signals
   );
-  if (!replInput) {
+  if (!replInput || con_signals) {
     std::thread([process, f = std::string(inFile)] {
       std::ifstream inStream(f, std::ios_base::in | std::ios_base::binary);
       char buf[BUF_SIZE];
@@ -118,7 +118,7 @@ DoSystemResult myDoSystemImpl(const char* cmd, int timeout,
     process->kill();
   }, timeout);
   rpiService->subprocessHandler(
-    replInput,
+    replInput || con_signals,
     [&] (std::string const& s) {
       if (s.empty()) {
         process->close_stdin();

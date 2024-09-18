@@ -39,10 +39,11 @@ static int utf8clen(char c) {
 SEXP myDoSystem(SEXP call, SEXP op, SEXP args, SEXP) {
   int intern = 0;
   int timeout = 0;
+  bool con_signals = false;
 
   int argsCount = Rf_length(args);
-  if (argsCount < 2 || argsCount > 3) {
-    Rf_error("%d arguments passed to .Internal(system) which requires 2 or 3", argsCount);
+  if (argsCount < 2 || argsCount > 4) {
+    Rf_error("%d arguments passed to .Internal(system) which requires 2 to 4", argsCount);
   }
 
   if (!Rf_isValidStringF(CAR(args)))
@@ -53,6 +54,9 @@ SEXP myDoSystem(SEXP call, SEXP op, SEXP args, SEXP) {
   timeout = argsCount == 3 ? Rf_asInteger(CADDR(args)) : 0;
   if (timeout == NA_INTEGER || timeout < 0)
     Rf_error("invalid 'timeout' argument");
+  con_signals = argsCount == 4 && Rf_asLogical(CADDDR(args));
+  if (con_signals == NA_INTEGER)
+    Rf_error("invalid 'receive_console_signals' argument");
   const void *vmax = vmaxget();
   const char *cmd = Rf_translateCharUTF8(STRING_ELT(CAR(args), 0));
   const char *c = cmd;
@@ -75,7 +79,7 @@ SEXP myDoSystem(SEXP call, SEXP op, SEXP args, SEXP) {
   vmaxset(vmax);
 
   CPP_BEGIN
-    DoSystemResult res = myDoSystemImpl(cmd, timeout, intern ? COLLECT : PRINT, "", PRINT, "", "", last_is_amp);
+    DoSystemResult res = myDoSystemImpl(cmd, timeout, intern ? COLLECT : PRINT, "", PRINT, "", "", last_is_amp, con_signals);
     if (res.timedOut) Rf_warning("command '%s' timed out after %ds", cmd, timeout);
     if (intern) {
       std::vector<std::string> lines;
