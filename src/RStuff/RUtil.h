@@ -312,7 +312,10 @@ inline SEXP createFinalizer(Func fin) {
 
 template<class Func>
 inline void walkObjectsImpl(Func const& f, std::unordered_set<SEXP> &visited, SEXP x) {
-  if (x == R_NilValue || x == R_UnboundValue || TYPEOF(x) == CHARSXP || visited.count(x)) return;
+  if (x == R_NilValue) return;
+  if (x == R_UnboundValue) return;
+  if (TYPEOF(x) == CHARSXP) return;
+  if (visited.find(x) != visited.end()) return;
   visited.insert(x);
   f(x);
   switch (TYPEOF(x)) {

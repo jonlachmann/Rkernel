@@ -513,6 +513,7 @@ void buildStackProto(std::vector<RDebuggerStackFrame> const& stack, StackFrameLi
     proto->set_functionname(frame.functionName);
     proto->set_equalityobject((long long)(SEXP)frame.environment);
     bool extendedPosition = false;
+    if (frame.srcref.type() == 29) continue;
     if (Rf_getAttrib(frame.srcref, RI->sendExtendedPositionFlag) != R_NilValue) {
       getExtendedSourcePosition(frame.srcref, proto->mutable_extendedsourceposition());
       extendedPosition = true;
@@ -598,11 +599,11 @@ void RDebugger::setBytecodeEnabled(bool enabled) {
       firstTime = false;
       ShieldSEXP myBytecode = Rf_cons(Rf_ScalarInteger(INT_MAX), R_NilValue);
       SET_TYPEOF(myBytecode, BCODESXP);
-      WithOption with("warn", -1);
+      //WithOption with("warn", -1);
       Rf_eval(myBytecode, R_GlobalEnv);
-      walkObjects([] (SEXP x) {
+      /*walkObjects([] (SEXP x) {
         if (TYPEOF(x) == BCODESXP) registerBytecode(x);
-      }, Rf_list2(R_GlobalEnv, R_NamespaceRegistry));
+      }, Rf_list2(R_GlobalEnv, R_NamespaceRegistry));*/
     }
     for (auto &p : allBytecode) {
       SEXP code = BCODE_CODE(p.first);
